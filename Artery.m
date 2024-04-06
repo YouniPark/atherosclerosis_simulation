@@ -64,10 +64,10 @@ classdef Artery
 
             % function to get the radius of the artery wrt. time
             
-            % Aortic
+            % Aortic:
             radius_a = obj.Initial_diameter_aortic / 2 * (1 - obj.LDL_concentration_aortic);
 
-            % Brachial
+            % Brachial:
             radius_b = obj.Initial_diameter_brachial / 2 * (1 - obj.LDL_concentration_brachial);
             
             radius = [radius_a, radius_b];
@@ -79,18 +79,36 @@ classdef Artery
             % function to get compliances
             
             % calculate the current radius of the arteries
-            Radius = get_radius(obj);
+            radius = get_radius(obj);
 
-            % Aortic
-            Ca = (3 * pi * (Radius(1)) .^ 2) / (2 * obj.ELastic_modulus_aortic * obj.Wall_thickness_aortic);
+            % Aortic:
+            Ca = (3 * pi * (radius(1)) .^ 2) / (2 * obj.ELastic_modulus_aortic * obj.Wall_thickness_aortic);
             
-            % Brachial
-            Cb = (3 * pi * (Radius(1)) .^ 2) / (2 * obj.ELastic_modulus_aortic * obj.Wall_thickness_aortic);
+            % Brachial:
+            Cb = (3 * pi * (radius(2)) .^ 2) / (2 * obj.ELastic_modulus_brachial * obj.Wall_thickness_brachial);
             
             compliances = [Ca, Cb];
           
         end
-        
+
+        function [resistances] = get_resistance(obj)
+
+            % function to get resistances
+            
+            % calculate the current radius of the arteries
+            radius = get_radius(obj);
+
+            % Aortic:
+            resistance_a = (8 * obj.Length_aortic) / (pi * radius(1) .^ 4);
+
+            % Brachial:
+            resistance_b = (8 * obj.Length_brachial) / (pi * radius(2) .^ 4);
+
+            resistances = [resistance_a, resistance_b];
+
+        end
+
+
         function [time, y] = simulate(obj, total_time)
             % define the time span for simulation
             time_span = [0, total_time];
@@ -101,9 +119,7 @@ classdef Artery
             options = odeset('RelTol', RelTol , 'AbsTol', AbsTol);
 
             % define the initial state
-            % considering all the blood in the atrium
-            initial_pressure =  [0, obj.non_slack_blood_volume/obj.C2, 0, 0];
-
+            
         end
 
         function [normalized_time] = get_normalized_time(obj, time)
