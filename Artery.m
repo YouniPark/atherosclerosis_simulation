@@ -80,10 +80,9 @@ classdef Artery
             compliances = get_compliances(obj); % compliances = [Ca, Cb]
 
             A = [1/(compliances(1) * resistances(2)), -1/(compliances(1) * resistances(2));
-                -1/(compliances(2) * resistances(2)), 1/(compliances(2) * resistances(2)) - obj.Peripheral_resistance / resistances(2)];
+                -1/(compliances(2) * resistances(2)), 1/(compliances(2) * resistances(2)) - 1 / (obj.Peripheral_resistance*compliances(2))];
            
         end
-
 
         function [B] = matrix_B(obj)
             % function to calculate matrix B
@@ -96,15 +95,15 @@ classdef Artery
 
         end
 
-
         function [time_varying_blood_volume] = get_blood_volume(obj, time)
-            % function to get blood volume wrt. time
+            % Modified function to get blood volume wrt. time
+            % Introduce a phase where blood volume decreases, simulating blood going back
             if time < 0.3
-                time_varying_blood_volume = 500 * sin(pi * time / 0.3);
+                time_varying_blood_volume = 500 * sin(pi * time / 0.3).^2;
             else
                 time_varying_blood_volume = 0;
             end
-          
+
         end
 
         function [Blood_flow] = get_blood_flow(obj, time)
@@ -117,26 +116,24 @@ classdef Artery
             % finite-difference approximation of 
             % time derivative of time-varying blood volume (blood flow)
             
-            if time < 0.3
-                dt = 0.0001;
-                forward_time = time + dt;
-                backward_time = max(0, time - dt);
-                forward = obj.get_blood_volume(forward_time);
-                backward = obj.get_blood_volume(backward_time);
-                Blood_flow = (forward - backward) / (2 * dt);
-            else
-                Blood_flow = 0;
-            end
+            
+            dt = 1e-6;
+            forward_time = time + dt;
+            backward_time = max(0, time - dt);
+            forward = obj.get_blood_volume(forward_time);
+            backward = obj.get_blood_volume(backward_time);
+            Blood_flow = (forward - backward) / (2 * dt);
+            
         end
         
         function [radius] = get_radius(obj)
             % function to get the radius of the artery wrt. time
             
             % Aortic:
-            radius_a = obj.Initial_diameter_aortic / 2 * (1 - obj.LDL_concentration_aortic);
+            radius_a = obj.Initial_diameter_aortic  - obj.LDL_concentration_aortic * obj.Initial_diameter_aortic;
 
             % Brachial:
-            radius_b = obj.Initial_diameter_brachial / 2 * (1 - obj.LDL_concentration_brachial);
+            radius_b = obj.Initial_diameter_brachial - obj.LDL_concentration_brachial * obj.Initial_diameter_brachial;
             
             radius = [radius_a, radius_b];
            
@@ -165,10 +162,10 @@ classdef Artery
             radius = get_radius(obj);
 
             % Aortic:
-            resistance_a = (8 * obj.Length_aortic) / (pi * radius(1) .^ 4);
+            resistance_a = (8 * obj.Length_aortic) / (pi * radius(1) .^ 5);
 
             % Brachial:
-            resistance_b = (8 * obj.Length_brachial) / (pi * radius(2) .^ 4);
+            resistance_b = (8 * obj.Length_brachial) / (pi * radius(2) .^ 5);
 
             resistances = [resistance_a, resistance_b];
 
@@ -185,26 +182,26 @@ classdef Artery
             options = odeset('RelTol', RelTol , 'AbsTol', AbsTol);
 
             % define initial blood pressure
-            initial_blood_pressure =  [15, 15];
+            initial_blood_pressure =  [115, 115];
 
             % define the initial state
             [time, y] = ode45(@(t,x)obj.get_state_derivatives(x,t), time_span, initial_blood_pressure, options);
 
         end
 
-        function [normalized_time] = get_normalized_time(obj, time)
-            % DO LATER
-            % Inputs
-            % t: time
-            
-            % Output
-            % time normalized to obj.T_max (duration of each phase)
-            if time > 0.8
-                normalized_time = mod(obj.T_max, time);
-            else
-                normalized_time = time;
-            end
-        end
+        % function [normalized_time] = get_normalized_time(obj, time)
+        %     % DO LATER
+        %     % Inputs
+        %     % t: time
+        % 
+        %     % Output
+        %     % time normalized to obj.T_max (duration of each phase)
+        %     if time > 0.8
+        %         normalized_time = mod(obj.T_max, time);
+        %     else
+        %         normalized_time = time;
+        %     end
+        % end
     end
 end
 
