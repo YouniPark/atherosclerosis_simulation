@@ -1,7 +1,8 @@
 clear
 clc
 
-artery_model = Artery(0, 0);
+% new radius = initial radius(1-factor)
+artery_model = Artery(0, 0.8); 
 
 % simulate for 0.3s
 t = 0.8;
@@ -12,12 +13,13 @@ blood_volume = artery_model.get_blood_volume(0.29);
 
 % calculate the aortic resistance
 R = artery_model.get_resistance;
-Ra = R(1);
-Rb = R(2);
+Ra = R(1)
+Rb = R(2)
 
 % get compliance for aortic
 compliances = artery_model.get_compliances;
-Ca = compliances(1);
+Ca = compliances(1)
+Cb = compliances(2)
 
 % initialize a vector to hold the output
 
@@ -32,7 +34,7 @@ for i = 1:length(time)
     blood_flow(i) = artery_model.get_blood_flow(time(i));
     % Calculate 
     % blood_pressure(i) = ( (Ra + Ca) * blood_flow(i) + Ca / Rb * (state(i, 1) - state(i, 2)) );
-    blood_pressure(i) = state(i,1) + Ra * blood_flow(i);
+    blood_pressure(i) = state(i, 1) + 1/3 * state(i, 2) + Ra * blood_flow(i);
     blood_pressure_a(i) = state(i,1);
     blood_pressure_b(i) = state(i,2);
 end
