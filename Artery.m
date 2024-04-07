@@ -2,10 +2,11 @@ classdef Artery
     % Model of artery (aortic or brachial)
     %   Detailed explanation goes here
     
+
     properties
 
-        % initial blood volume
         Initial_blood_volume {mustBeNumeric}
+        Peripheral_resistance {mustBeNumeric}
 
         % aortic
         Length_aortic {mustBeNumeric}
@@ -23,11 +24,13 @@ classdef Artery
         LDL_concentration_brachial {mustBeNumeric}
     end
     
+
     methods
         function obj = Artery(LDL_conc_aortic_, LDL_conc_brachial_)
            if nargin == 2
             
             obj.Initial_blood_volume = 500; 
+            obj.Peripheral_resistance = 0.0001;
 
             % Aortic:
             obj.LDL_concentration_aortic = LDL_conc_aortic_;
@@ -37,7 +40,6 @@ classdef Artery
             obj.Wall_thickness_aortic = 6; %mm
             obj.Initial_diameter_aortic = 36; %mm
 
-            
             % Brachial:
             obj.LDL_concentration_brachial = LDL_conc_brachial_;
 
@@ -49,19 +51,69 @@ classdef Artery
            end
         end
         
-        function [Blood_volume] = get_blood_volume(time)
 
+        function [state_derivatives] = get_state_derivatives(obj, x, time)
+            % calculate the time-varying blood flow
+            blood_flow = obj.get_blood_flow(time);
+            
+            % implement the state equation x_dot = Ax + Bu
+            state_derivatives = obj.matrix_A * x + obj.matrix_B * blood_flow;
+        end
+        
+
+        function [A] = matrix_A(obj)
+            % function to calculate matrix A
+
+            % caluclate the resistances and compliances 
+            % in aortic and brachial arteries
+            resistances = get_resistance(obj);  % resistances = [Ra, Rb]
+            compliances = get_compliances(obj); % compliances = [Ca, Cb]
+
+            A = [1/(compliances(1) * resistances(2)), -1/(compliances(1) * resistances(2)) 
+                -1/(compliances(2) * resistances(2)), 1/(compliances(2) * resistances(2)) - obj.Peripheral_resistance / resistances(2)];
+        end
+
+
+        function [B] = matrix_B(obj)
+            % function to calculate matrix B
+            
+            % calculate the compliances
+            compliances = get_compliances(obj); % compliances = [Ca, Cb]
+
+            B = [1/compliances(1)
+                0];
+        end
+
+
+        function [time_varying_blood_volume] = get_blood_volume(time)
             % function to get blood volume wrt. time
             if time < 0.3
-                Blood_volume = 500 * sin(pi * time / 0.3);
+                time_varying_blood_volume = 500 * sin(pi * time / 0.3);
             else
-                Blood_volume = 0;
+                time_varying_blood_volume = 0;
             end
           
         end
+
+        function [Blood_flow] = get_blood_flow(obj, time)
+            %   Calculates finite-difference approximation of blood flow (blood volume derivative)
+           
+            % Input
+            % time 
+            
+            % Output
+            % finite-difference approximation of 
+            % time derivative of time-varying blood volume (blood flow)
+            
+            dt = 0.0001;
+            forward_time = time + dt;
+            backward_time = max(0, time - dt);
+            forward = obj.get_blood_volume(forward_time);
+            backward = obj.get_blood_volume(backward_time);
+            Blood_flow = (forward - backward) / (2 * dt);
+        end
         
         function [radius] = get_radius(obj)
-
             % function to get the radius of the artery wrt. time
             
             % Aortic:
@@ -75,7 +127,6 @@ classdef Artery
         end
 
         function [compliances] = get_compliances(obj)
-
             % function to get compliances
             
             % calculate the current radius of the arteries
@@ -88,7 +139,6 @@ classdef Artery
             Cb = (3 * pi * (radius(2)) .^ 2) / (2 * obj.ELastic_modulus_brachial * obj.Wall_thickness_brachial);
             
             compliances = [Ca, Cb];
-          
         end
 
         function [resistances] = get_resistance(obj)
@@ -118,11 +168,15 @@ classdef Artery
             AbsTol = 1e-8;
             options = odeset('RelTol', RelTol , 'AbsTol', AbsTol);
 
+            % define initial blood pressure
+            initial_blood_pressure =  [80, 80];
+
             % define the initial state
-            
+            [time, y] = ode45(@(x,t)obj.get_state_derivatives(x,t), time_span, initial_blood_pressure, options);
+
         end
 
-        function [normalized_time] = get_normalized_time(obj, time)
+        %function [normalized_time] = get_normalized_time(obj, time)
             % DO LATER
             % Inputs
             % t: time
@@ -130,8 +184,8 @@ classdef Artery
             % Output
             % time normalized to obj.Tmax (duration of each phase)
             
-            normalized_time = rem(t, obj.tc) / obj.Tmax;
-        end
+            %normalized_time = rem(t, obj.tc) / obj.Tmax;
+        %end
     end
 end
 
