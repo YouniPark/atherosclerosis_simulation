@@ -1,19 +1,25 @@
 clear
 clc
 
-artery_model = Artery(0.9, 0);
+artery_model = Artery(0.7, 0.5);
 
 % simulate for 0.3s
-t = 0.3;
+t = 0.8;
+% normalized_time = artery_model.get_normalized_time(t);
 [time, state] = artery_model.simulate(t);
 
-% calcultate the output y:
+blood_volume = artery_model.get_blood_volume(0.29);
 
 % calculate the aortic resistance
 R = artery_model.get_resistance;
 Ra = R(1);
 
+% get compliance for aortic
+compliances = artery_model.get_compliances;
+Ca = compliances(1);
+
 % initialize a vector to hold the output
+
 blood_pressure = zeros(length(time), 1);
 blood_flow = zeros(length(time), 1);
 
