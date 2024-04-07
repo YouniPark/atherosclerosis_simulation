@@ -22,6 +22,8 @@ classdef Artery
         Wall_thickness_brachial {mustBeNumeric}
         Initial_diameter_brachial {mustBeNumeric}
         LDL_concentration_brachial {mustBeNumeric}
+
+        T_max {mustBeNumeric}
     end
     
 
@@ -30,7 +32,8 @@ classdef Artery
            if nargin == 2
             
             obj.Initial_blood_volume = 500; 
-            obj.Peripheral_resistance = 0.0001;
+            obj.Peripheral_resistance = 0.89*(0.22);
+            obj.T_max = 0.8; 
 
             % Aortic:
             obj.LDL_concentration_aortic = LDL_conc_aortic_;
@@ -47,7 +50,6 @@ classdef Artery
             obj.ELastic_modulus_brachial = 3.8; %MPa
             obj.Wall_thickness_brachial = 0.29; %mm
             obj.Initial_diameter_brachial = 4.3; %mm
-            
            end
         end
         
@@ -115,12 +117,16 @@ classdef Artery
             % finite-difference approximation of 
             % time derivative of time-varying blood volume (blood flow)
             
-            dt = 0.0001;
-            forward_time = time + dt;
-            backward_time = max(0, time - dt);
-            forward = obj.get_blood_volume(forward_time);
-            backward = obj.get_blood_volume(backward_time);
-            Blood_flow = (forward - backward) / (2 * dt);
+            if time < 0.3
+                dt = 0.0001;
+                forward_time = time + dt;
+                backward_time = max(0, time - dt);
+                forward = obj.get_blood_volume(forward_time);
+                backward = obj.get_blood_volume(backward_time);
+                Blood_flow = (forward - backward) / (2 * dt);
+            else
+                Blood_flow = 0;
+            end
         end
         
         function [radius] = get_radius(obj)
@@ -179,14 +185,14 @@ classdef Artery
             options = odeset('RelTol', RelTol , 'AbsTol', AbsTol);
 
             % define initial blood pressure
-            initial_blood_pressure =  [80; 80];
+            initial_blood_pressure =  [15, 15];
 
             % define the initial state
             [time, y] = ode45(@(t,x)obj.get_state_derivatives(x,t), time_span, initial_blood_pressure, options);
 
         end
 
-        %function [normalized_time] = get_normalized_time(obj, time)
+        function [normalized_time] = get_normalized_time(obj, time)
             % DO LATER
             % Inputs
             % t: time
@@ -194,8 +200,8 @@ classdef Artery
             % Output
             % time normalized to obj.Tmax (duration of each phase)
             
-            %normalized_time = rem(t, obj.tc) / obj.Tmax;
-        %end
+            normalized_time = mod(obj.Tmax, t);
+        end
     end
 end
 
