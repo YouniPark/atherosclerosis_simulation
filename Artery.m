@@ -80,7 +80,7 @@ classdef Artery
             compliances = get_compliances(obj); % compliances = [Ca, Cb]
 
             A = [1/(compliances(1) * resistances(2)), -1/(compliances(1) * resistances(2));
-                -1/(compliances(2) * resistances(2)), 1/(compliances(2) * resistances(2)) - 1 / (obj.Peripheral_resistance*compliances(2))];
+                -1/(compliances(2).^2 * resistances(2)), 1/(compliances(2).^2 * resistances(2)) - 1 / (obj.Peripheral_resistance*compliances(2))];
            
         end
 
@@ -91,7 +91,7 @@ classdef Artery
             compliances = get_compliances(obj); % compliances = [Ca, Cb]
 
             B = [1/compliances(1);
-                0];
+                1/compliances(2)-1/compliances(2).^2];
 
         end
 
@@ -99,7 +99,7 @@ classdef Artery
             % Modified function to get blood volume wrt. time
             % Introduce a phase where blood volume decreases, simulating blood going back
             if time < 0.3
-                time_varying_blood_volume = 500 * sin(pi * time / 0.3).^2;
+                time_varying_blood_volume = obj.Initial_blood_volume * sin(pi * time / 0.3).^2;
             else
                 time_varying_blood_volume = 0;
             end
@@ -162,10 +162,10 @@ classdef Artery
             radius = get_radius(obj);
 
             % Aortic:
-            resistance_a = (8 * obj.Length_aortic) / (pi * radius(1) .^ 5);
+            resistance_a = (8 * obj.Length_aortic) / (pi * radius(1) .^ 4);
 
             % Brachial:
-            resistance_b = (8 * obj.Length_brachial) / (pi * radius(2) .^ 5);
+            resistance_b = (8 * obj.Length_brachial) / (pi * radius(2) .^ 4);
 
             resistances = [resistance_a, resistance_b];
 
@@ -181,8 +181,8 @@ classdef Artery
             AbsTol = 1e-8;
             options = odeset('RelTol', RelTol , 'AbsTol', AbsTol);
 
-            % define initial blood pressure
-            initial_blood_pressure =  [115, 115];
+            % define initial blood pressure [aortic, brachial]
+            initial_blood_pressure =  [66, 67];
 
             % define the initial state
             [time, y] = ode45(@(t,x)obj.get_state_derivatives(x,t), time_span, initial_blood_pressure, options);
