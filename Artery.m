@@ -198,9 +198,12 @@ classdef Artery
             % t: time
             
             % Output
-            % time normalized to obj.Tmax (duration of each phase)
-            
-            normalized_time = mod(obj.Tmax, t);
+            % time normalized to obj.T_max (duration of each phase)
+            if time > 0.8
+                normalized_time = mod(obj.T_max, time);
+            else
+                normalized_time = time;
+            end
         end
     end
 end
