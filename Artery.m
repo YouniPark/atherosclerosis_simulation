@@ -56,8 +56,16 @@ classdef Artery
             % calculate the time-varying blood flow
             blood_flow = obj.get_blood_flow(time);
             
+            % calculate matrix A and B
+            A = obj.matrix_A();
+            B = obj.matrix_B();
+
             % implement the state equation x_dot = Ax + Bu
-            state_derivatives = obj.matrix_A * x + obj.matrix_B * blood_flow;
+            state_derivatives = A * x + B * blood_flow;
+            
+            % Ensure state_derivatives is a column vector (correctly formatted)
+            state_derivatives = state_derivatives(:);
+                % Calculate the time-varying blood flo
         end
         
 
@@ -69,8 +77,9 @@ classdef Artery
             resistances = get_resistance(obj);  % resistances = [Ra, Rb]
             compliances = get_compliances(obj); % compliances = [Ca, Cb]
 
-            A = [1/(compliances(1) * resistances(2)), -1/(compliances(1) * resistances(2)) 
+            A = [1/(compliances(1) * resistances(2)), -1/(compliances(1) * resistances(2));
                 -1/(compliances(2) * resistances(2)), 1/(compliances(2) * resistances(2)) - obj.Peripheral_resistance / resistances(2)];
+           
         end
 
 
@@ -80,12 +89,13 @@ classdef Artery
             % calculate the compliances
             compliances = get_compliances(obj); % compliances = [Ca, Cb]
 
-            B = [1/compliances(1)
+            B = [1/compliances(1);
                 0];
+
         end
 
 
-        function [time_varying_blood_volume] = get_blood_volume(time)
+        function [time_varying_blood_volume] = get_blood_volume(obj, time)
             % function to get blood volume wrt. time
             if time < 0.3
                 time_varying_blood_volume = 500 * sin(pi * time / 0.3);
@@ -169,10 +179,10 @@ classdef Artery
             options = odeset('RelTol', RelTol , 'AbsTol', AbsTol);
 
             % define initial blood pressure
-            initial_blood_pressure =  [80, 80];
+            initial_blood_pressure =  [80; 80];
 
             % define the initial state
-            [time, y] = ode45(@(x,t)obj.get_state_derivatives(x,t), time_span, initial_blood_pressure, options);
+            [time, y] = ode45(@(t,x)obj.get_state_derivatives(x,t), time_span, initial_blood_pressure, options);
 
         end
 
