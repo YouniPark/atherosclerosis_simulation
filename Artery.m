@@ -13,7 +13,7 @@ classdef Artery
         ELastic_modulus_aortic {mustBeNumeric}
         Wall_thickness_aortic {mustBeNumeric}
         Initial_diameter_aortic {mustBeNumeric}
-        LDL_concentration_aortic {mustBeNumeric}
+        Percent_area_reduction_aortic {mustBeNumeric}
         
 
         % brachial
@@ -21,14 +21,14 @@ classdef Artery
         ELastic_modulus_brachial {mustBeNumeric}
         Wall_thickness_brachial {mustBeNumeric}
         Initial_diameter_brachial {mustBeNumeric}
-        LDL_concentration_brachial {mustBeNumeric}
+        Percent_area_reduction_brachial {mustBeNumeric}
 
         T_max {mustBeNumeric}
     end
     
 
     methods
-        function obj = Artery(LDL_conc_aortic_, LDL_conc_brachial_)
+        function obj = Artery(precent_area_reduction_aortic, percent_area_reduction_brachial)
            if nargin == 2
             
             obj.Initial_blood_volume = 500; 
@@ -36,7 +36,7 @@ classdef Artery
             obj.T_max = 0.8; 
 
             % Aortic:
-            obj.LDL_concentration_aortic = LDL_conc_aortic_;
+            obj.Percent_area_reduction_aortic = precent_area_reduction_aortic;
 
             obj.Length_aortic = 30; %mm
             obj.ELastic_modulus_aortic = 1.6; %MPa
@@ -44,7 +44,7 @@ classdef Artery
             obj.Initial_diameter_aortic = 36; %mm
 
             % Brachial:
-            obj.LDL_concentration_brachial = LDL_conc_brachial_;
+            obj.Percent_area_reduction_brachial = percent_area_reduction_brachial;
 
             obj.Length_brachial = 200; %mm
             obj.ELastic_modulus_brachial = 3.8; %MPa
@@ -130,10 +130,10 @@ classdef Artery
             % function to get the radius of the artery wrt. time
             
             % Aortic:
-            radius_a = obj.Initial_diameter_aortic  - obj.LDL_concentration_aortic * obj.Initial_diameter_aortic;
+            radius_a = obj.Initial_diameter_aortic  - obj.Percent_area_reduction_aortic * obj.Initial_diameter_aortic;
 
             % Brachial:
-            radius_b = obj.Initial_diameter_brachial - obj.LDL_concentration_brachial * obj.Initial_diameter_brachial;
+            radius_b = obj.Initial_diameter_brachial - obj.Percent_area_reduction_brachial * obj.Initial_diameter_brachial;
             
             radius = [radius_a, radius_b];
            
@@ -165,7 +165,7 @@ classdef Artery
             resistance_a = (8 * obj.Length_aortic) / (pi * radius(1) .^ 4);
 
             % Brachial:
-            resistance_b = (8 * obj.Length_brachial) / (pi * radius(2) .^ 4);
+            resistance_b = (8 * obj.Length_brachial) / (pi * radius(2) .^ 5);
 
             resistances = [resistance_a, resistance_b];
 
@@ -182,7 +182,7 @@ classdef Artery
             options = odeset('RelTol', RelTol , 'AbsTol', AbsTol);
 
             % define initial blood pressure [aortic, brachial]
-            initial_blood_pressure =  [66, 67];
+            initial_blood_pressure =  [80, 85];
 
             % define the initial state
             [time, y] = ode45(@(t,x)obj.get_state_derivatives(x,t), time_span, initial_blood_pressure, options);
