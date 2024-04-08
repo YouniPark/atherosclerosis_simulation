@@ -1,7 +1,5 @@
 classdef Artery
     % Model of artery (aortic or brachial)
-    %   Detailed explanation goes here
-    
 
     properties
 
@@ -188,20 +186,6 @@ classdef Artery
             [time, y] = ode45(@(t,x)obj.get_state_derivatives(x,t), time_span, initial_blood_pressure, options);
 
         end
-
-        % function [normalized_time] = get_normalized_time(obj, time)
-        %     % DO LATER
-        %     % Inputs
-        %     % t: time
-        % 
-        %     % Output
-        %     % time normalized to obj.T_max (duration of each phase)
-        %     if time > 0.8
-        %         normalized_time = mod(obj.T_max, time);
-        %     else
-        %         normalized_time = time;
-        %     end
-        % end
     end
 end
 
